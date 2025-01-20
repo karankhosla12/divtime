@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Div Timer with Cookies</title>
+    <style>
+        .container {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid black;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .submit-btn {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="div1">
+        <p>This is the first div.</p>
+        <p>Viewing Time: <span id="timer1">0</span> seconds</p>
+    </div>
+
+    <div class="container" id="div2">
+        <p>This is the second div.</p>
+        <p>Viewing Time: <span id="timer2">0</span> seconds</p>
+    </div>
+
+    <div class="container" id="div3">
+        <p>This is the third div.</p>
+        <p>Viewing Time: <span id="timer3">0</span> seconds</p>
+    </div>
+
+    <div class="container" id="div4">
+        <h3>Contact Us</h3>
+        <form id="conversion-form" onsubmit="handleSubmit(event)">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="jobtitle">Job Title</label>
+                <input type="text" id="jobtitle" name="jobtitle" placeholder="Enter your job title" required>
+            </div>
+            <div class="form-group">
+                <label for="company">Company</label>
+                <input type="text" id="company" name="company" placeholder="Enter your company name" required>
+            </div>
+            <button type="submit" class="submit-btn">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        // Function to set a cookie
+        function setCookie(name, value) {
+            document.cookie = `${name}=${value}; path=/`;
+        }
+
+        // Function to get a cookie by name
+        function getCookie(name) {
+            let cookies = document.cookie.split('; ');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].split('=');
+                if (cookie[0] === name) {
+                    return cookie[1];
+                }
+            }
+            return null;
+        }
+
+        // Set the initial page load timestamp cookie
+        let pageLoadTime = Date.now();
+        setCookie("div1", pageLoadTime);
+
+        // Function to start tracking time when div comes into view
+        function trackDiv(divId, cookieName, timerId) {
+            let div = document.getElementById(divId);
+            div.addEventListener('mouseenter', () => {
+                let enterTime = Date.now();
+                setCookie(cookieName, enterTime);
+
+                let previousTime = getCookie("div1");
+                if (previousTime) {
+                    let timeSpent = Math.floor((enterTime - previousTime) / 1000);
+                    document.getElementById(timerId).innerText = timeSpent;
+                }
+            });
+        }
+
+        // Track divs when they come into view
+        trackDiv("div2", "div2", "timer2");
+        trackDiv("div3", "div3", "timer3");
+
+        // Function to determine the div with the highest viewing time
+        function getHighestViewingTimeDiv() {
+            let div1Time = parseInt(getCookie("div1")) || 0;
+            let div2Time = parseInt(getCookie("div2")) || 0;
+            let div3Time = parseInt(getCookie("div3")) || 0;
+
+            if (div3Time > div2Time && div3Time > div1Time) {
+                return 'div3'; // div3 has the highest time
+            } else if (div2Time > div1Time) {
+                return 'div2'; // div2 has the highest time
+            } else {
+                return 'div1'; // div1 has the highest time
+            }
+        }
+
+        // Handling the contact form submission
+        async function handleSubmit(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const jobtitle = document.getElementById('jobtitle').value;
+            const company = document.getElementById('company').value;
+
+            // Get the div with the highest viewing time
+            let highestDiv = getHighestViewingTimeDiv();
+
+            // Replace name with the div having the highest viewing time
+            let updatedName = highestDiv;
+
+            // Store email in a cookie
+            setCookie("userEmail", email);
+
+            // Send form data to API
+            const response = await fetch('https://billowing-sun-2f6d.karankhosla99.workers.dev/add-conversion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Name: updatedName, Email: email, Jobtitle: jobtitle, Company: company }),
+            });
+
+            if (response.ok) {
+                alert('Data submitted successfully!');
+                document.getElementById('conversion-form').reset();
+            } else {
+                alert('Failed to submit data. Please try again.');
+            }
+        }
+
+        // If there's an email cookie, show the stored email on page load
+        let storedEmail = getCookie("userEmail");
+        if (storedEmail) {
+            document.getElementById("storedEmail").innerText = storedEmail;
+        }
+    </script>
+
+</body>
+</html>
